@@ -1,0 +1,814 @@
+Emacs configuration
+* Sections
+#+TODO: FIXME | FIXED SURE
+:PROPERTIES:
+:VISIBILITY: children
+:END:
+** Set personal information                                  :persona:*sdamnit*:
+#+NAME: s2-at-home
+#+BEGIN_SRC emacs-lisp
+(setq user-full-name "Stephen M. Switzer"
+      user-mail-address "sdamnit@gmail.com"
+      calendar-latitude 38.60
+      calendar-longitude -121.47
+      calendar-location-name "Sacramento, CA")
+#+END_SRC
+#+BEGIN_EXAMPLE
+			    *Confidential*
+  ========================================================================
+  #+TITLE: Emacs configuration
+  #+AUTHOR: sdamnit@gmail.com
+  #+CREATED: 2016-12-01
+  #+MODIFIED: <2017-04-30 Sun>
+  ========================================================================
+
+#+END_EXAMPLE
+Also see [[http://www.djcbsoftware.nl/dot-emacs.html][=djcb= blog]]
+** Shortcut to config file
+#+BEGIN_SRC emacs-lisp
+;; Open this config file
+(global-set-key (kbd "C-c s")
+                (lambda () (interactive) (find-file "~/.emacs.d/s2-emacs-settings.org")))
+#+END_SRC
+** FIXME Shortcut to REFERENCE file
+# #+BEGIN_SRC emacs-lisp
+# ;; Open our REFERENCE file
+# (global-set-key (kbd "C-c r")
+#                 (lambda () (interactive) (find-file "~/FilesToSync/data/REFERENCE.org")))
+
+# #+END_SRC
+** FIXME load-path and config file ordering	      :reference:setup:paths:
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/init"))
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/site-lisp"))
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/site-lisp/themes"))
+(add-to-list 'custom-theme-load-path
+             (expand-file-name "~/.emacs.d/site-lisp/themes/"))
+
+(defvar s2-current-theme nil "The current theme")
+(defconst s2-cache-dir (expand-file-name "~/.emacs.d/cache/")
+  "dir with volatile data")
+(defconst s2-data-dir (expand-file-name "~/.emacs.d/data/")
+  "dir for user data")
+#+END_SRC
+** SURE General defaults
+#+BEGIN_SRC emacs-lisp
+(setq inhibit-startup-message t
+      inhibit-startup-echo-area-message t
+      initial-scratch-message
+      ";; Even when all your victories are memories, fight on.")
+
+;; Send customizations to another file and load that file
+
+(setq-default show-trailing-whitespace t)
+
+;; Indentation.  Tabs are the devil
+(setq-default indent-tabs-mode nil)
+
+;; When in doubt, org-mode!
+(setq initial-major-mode 'org-mode)
+
+;; display column number in the mode line
+(column-number-mode)
+
+;; reduce the frequency of garbage collection by making it happen on
+;; each 50MB of allocated data (the default is on every 0.76MB)
+(setq gc-cons-threshold 50000000)
+
+;; warn when opening files bigger than 100MB
+(setq large-file-warning-threshold 100000000)
+
+;; Answering just 'y' or 'n' will do
+(defalias 'yes-or-no-p 'y-or-n-p)
+
+;; nice scrolling
+(setq scroll-margin 3
+      scroll-conservatively 100000
+      scroll-preserve-screen-position 1)
+
+;; Remove text in active region if inserting text
+(delete-selection-mode 1)
+
+;; Type face size stuff
+(set-face-attribute 'default nil :height 160)
+
+;; Save backups elsewhere
+(setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
+
+;; custom "is-work" variable allows explicit work demarcation
+(setq is-work nil)
+
+;; Enable show-paren-mode
+(show-paren-mode 1)
+
+;; Enable word-wrapping
+(global-visual-line-mode t)
+
+;; Highlight lines (with some themes this is distracting, disable if necessary)
+(global-hl-line-mode t)
+
+(setq set-mark-command-repeat-pop t)
+
+(global-auto-revert-mode)
+#+END_SRC
+** SURE EMACS GUI
+   not convinced I want to turn all of this off yet, but at least I'll know this file is engaged when I see it.
+#+BEGIN_SRC emacs-lisp
+(if (fboundp 'menu-bar-mode) (menu-bar-mode -1))
+(if (fboundp 'tool-bar-mode) (tool-bar-mode -1))
+(if (fboundp 'tooltip-mode) (tooltip-mode -1))
+(if (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
+
+(when window-system
+  (setq frame-title-format '(buffer-file-name "%f" ("%b")))
+  (add-hook 'window-setup-hook 'toggle-frame-maximized t))
+#+END_SRC
+** SURE MELPA and other repositories to load-path
+#+BEGIN_SRC emacs-lisp
+;; Emacs lisp files
+(add-to-list 'load-path "~/.emacs.d/elisp/")
+
+(require 'package)
+
+(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
+
+(when (< emacs-major-version 24)
+  ;; For important compatibility libraries like cl-lib
+  (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/")))
+
+(package-initialize)
+
+#+END_SRC
+** FIXME # load Packages
+# making start-up REALLY long, but this only happens when the machine cycles
+
+emacs daemon starts, and all these programs are loaded from the get go.
+#+BEGIN_SRC emacs-lisp
+(setq package-selected-packages
+      (quote (exec-path-from-shell pyenv-mode color-theme magit python use-package org-bullets fill-column-indicator elpy)))
+#+END_SRC
+- [ ] tests passing down to bare metal
+** FIXME # default frame list
+#+BEGIN_SRC emacs-lisp
+(setq 'default-frame-alist
+      (quote
+       ((tool-bar-lines . 0)
+        (menu-bar-lines . 0)
+        (foreground-color . "Black")
+        (background-color . "Whate")
+        (cursor-type . box)
+        (cursor-color . "Red")
+        (internal-border-widgth . 0)
+        (left-fringe . 1)
+        (right-fringe)
+        (fringe)
+        (vertical-scroll-bars))))
+(setq 'ns-tool-bar-display-mode (quote both) t)
+(setq 'ns-tool-bar-size-mode (quote regular) t)
+#+END_SRC
+** SURE load custom.el
+#+BEGIN_SRC emacs-lisp
+(setq custom-file "~/.emacs.d/custom.el")
+(load custom-file)
+#+END_SRC
+** Fill-column-indicator				    :reference:setup:
+Found this in stolen configuration which was using =use-package=
+to configure.   Adapting for my own purposes
+
+Installed using 'install-package'.  Should figure out a good way to bake that into this file
+
+#+BEGIN_SRC emacs-lisp
+(require 'fill-column-indicator)
+(add-hook 'python-mode-hook 'fci-mode)
+(add-hook 'org-mode-hook 'fci-mode)
+(setq-default fill-column 79)
+(setq-default fci-rule-color "#546D7A")
+#+END_SRC
+** SURE Server stuff                                                 :notes:
+
+By default, we're running an unnamed server, but we can have different
+servers running on the same machine.
+
+Consider using an emacs NOTES server; an emacs DEVELOPER server for
+editing and development; and an emacs OFFICER server for scheduling/planning/execution
+type stuff.
+
+Just a thought.
+
+To pull off the above, we'd need to do some fancy foot work.
+ a) This init file is always run when =emacs= is invoked.  The code below
+ just loads the "SERVER" elisp library and starts it if it isn't running.
+#+BEGIN_SRC emacs-lisp
+(load "server")
+(unless (server-running-p) (server-start))
+#+END_SRC
+
+You can always rename a server and start a new one (I think)
+
+Lets try it out.  So, comment-dwim isn't picking up that the block
+above was eslip.  Tried to comment out with '#' instead of ';'
+
+So this is great, except for Aquamacs.  Aquamacs with debug-init just
+dies in a fire.   Got Aquamacs to use my settings file (and actually, I kinda
+like this.  It is wrapping the way I expect and a lot!!)
+
+So loading server to a file on OSX is weird.  Better to just let it be.
+
+=current operating thought= as of <2017-01-23 Mon>:
+ - config file (this file) can and should be used "everywhere"
+ - start an instance of emacs (or Aquamacs) - this config makes sure that
+   instance is a server.
+ - If necessary, name the server and [[file:~/FilesToSync/data/REFERENCE.org::*HOW%20TO%20start%20a%20new%20instance%20of%20emacs%20on%20OSX][start a new instance]].
+** SURE Electric-pair
+[[help:electric-pair-mode][Help for electric-pair-mode]]
+
+list of modes to disable or enable electric-pair
+
+#+BEGIN_SRC emacs-lisp
+(when (load "elec-pair" t t)
+  (electric-pair-mode 1))
+
+(defvar s2/electic-pair-modes
+  '(python-mode org-mode lisp-interaction-mode js2-mode emacs-lisp-mode yaml-mode))
+
+(defun s2/inhibit-electric-pair-mode (char)
+  (not (member major-mode s2/electic-pair-modes)))
+
+(setq electric-pair-inhibit-predicate #'s2/inhibit-electric-pair-mode)
+
+(setq-default electric-pair-inhibit-predicate 'electric-pair-conservative-inhibit)
+#+END_SRC
+
+** SURE History and auto-save                         :pivot:existing:emacs:
+This will get weird if emacs has already been used on the system.
+Since it modifies where emacs closes out its temp files (emacs is just one big
+closure after-all), this is where you'll get pain when trying to use this
+config.
+Consider yourself warned.
+#+BEGIN_SRC emacs-lisp
+(setq savehist-file "/Users/sswitzer/.emacs.d/savehist")
+(savehist-mode 1)
+;; t means no truncation
+(setq history-length t)
+(setq history-delete-duplicates t)
+(setq savehist-save-minibuffer-history 1)
+(setq savehist-additional-variables
+      '(kill-ring
+        search-ring
+        regexp-search-ring))
+
+(setq auto-save-file-name-transforms '((".*" "/Users/sswitzer/.emacs.d/auto-save-list/" t)))
+#+END_SRC
+
+** SURE utf-8
+May be redundant, but at least it is explicit.
+#+BEGIN_SRC emacs-lisp
+(setq locale-coding-system 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(set-selection-coding-system 'utf-8)
+(prefer-coding-system 'utf-8)
+#+END_SRC
+
+** Assorted custom functions
+#+BEGIN_SRC emacs-lisp
+(defmacro my/with-advice (adlist &rest body)
+  "Execute BODY with temporary advice in ADLIST.
+
+Each element of ADLIST should be a list of the form
+  (SYMBOL WHERE FUNCTION [PROPS])
+suitable for passing to `advice-add'.  The BODY is wrapped in an
+`unwind-protect' form, so the advice will be removed even in the
+event of an error or nonlocal exit."
+  (declare (debug ((&rest (&rest form)) body))
+           (indent 1))
+  `(progn
+     ,@(mapcar (lambda (adform)
+                 (cons 'advice-add adform))
+               adlist)
+     (unwind-protect (progn ,@body)
+       ,@(mapcar (lambda (adform)
+                   `(advice-remove ,(car adform) ,(nth 2 adform)))
+                 adlist))))
+
+(defun my/call-logging-hooks (command &optional verbose)
+  "Call COMMAND, reporting every hook run in the process.
+Interactively, prompt for a command to execute.
+
+Return a list of the hooks run, in the order they were run.
+Interactively, or with optional argument VERBOSE, also print a
+message listing the hooks."
+  (interactive "CCommand to log hooks: \np")
+  (let* ((log     nil)
+         (logger (lambda (&rest hooks)
+                   (setq log (append log hooks nil)))))
+    (my/with-advice
+        ((#'run-hooks :before logger))
+      (call-interactively command))
+    (when verbose
+      (message
+       (if log "Hooks run during execution of %s:"
+         "No hooks run during execution of %s.")
+       command)
+      (dolist (hook log)
+        (message "> %s" hook)))
+    log))
+#+END_SRC
+
+** REVIEW Assorted key bindings
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-c o") 'browse-url-of-file)
+(global-set-key (kbd "C-+") 'text-scale-increase)
+(global-set-key (kbd "C-\-") 'text-scale-decrease)
+(global-set-key "\C-xp" 'pop-to-mark-command)
+(global-set-key (kbd "s-n") 'make-frame)
+(eval-after-load "dired" '(progn (define-key dired-mode-map "b" 'dired-up-directory)))
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-w") 'backward-kill-word)
+(global-set-key (kbd "C-x C-k") 'kill-region)
+(global-set-key (kbd "M-/") 'hippie-expand)
+(global-set-key (kbd "M-o") 'other-window)
+(global-set-key (kbd "M-#") 'sort-lines)
+(global-set-key (kbd "C-c s") 'multi-term)
+(global-set-key (kbd "C-x g") 'magit-status)
+;; (global-set-key (kbd "C-c o") 'occur)
+#+END_SRC
+Remap when working in terminal Emacs.
+#tobegrokd
+#+BEGIN_SRC emacs-lisp
+  ;; (define-key input-decode-map "\e[1;2A" [S-up])
+#+END_SRC
+
+** REVIEW Fly spell
+#+BEGIN_SRC emacs-lisp
+;; Enable flyspell-mode
+(add-hook 'org-mode-hook 'flyspell-mode)
+(add-hook  'text-mode-hook 'flyspell-mode)
+(add-hook 'prog-mode-hook 'flyspell-prog-mode)
+#+END_SRC
+
+** REVIEW Copy line
+#+BEGIN_SRC emacs-lisp
+(defun copy-line (arg)
+ "Copy lines (as many as prefix argument) in the kill ring.
+   Ease of use features:
+   - Move to start of next line.
+   - Appends the copy on sequential calls.
+   - Use newline as last char even on the last line of the buffer.
+   - If region is active, copy its lines."
+ (interactive "p")
+ (let ((beg (line-beginning-position))
+       (end (line-end-position arg)))
+   (when mark-active
+     (if (> (point) (mark))
+         (setq beg (save-excursion (goto-char (mark)) (line-beginning-position)))
+       (setq end (save-excursion (goto-char (mark)) (line-end-position)))))
+   (if (eq last-command 'copy-line)
+       (kill-append (buffer-substring beg end) (< end beg))
+     (kill-ring-save beg end)))
+ (kill-append "\n" nil)
+ (beginning-of-line (or (and arg (1+ arg)) 2))
+ (if (and arg (not (= 1 arg))) (message "%d lines copied" arg)))
+
+(global-set-key (kbd "C-S-l") 'copy-line)
+
+#+END_SRC
+
+** REVIEW SQL
+#+BEGIN_SRC emacs-lisp
+(add-hook 'sql-interactive-mode-hook
+          (lambda ()
+            (toggle-truncate-lines t)))
+#+END_SRC
+
+** FIXME Shell/Environment variables
+# Most of this should be echoed in a bashrc.
+
+# PATH manipulations should ACTUALLY happen in a bashrc
+# # #+BEGIN_SRC emacs-lisp
+# # ;; prioritize Homebrew binaries
+# # (setenv "PATH" "/usr/local/bin:/usr/local/sbin:$PATH")
+# # #+END_SRC
+# #+BEGIN_SRC emacs-lisp
+# ;; venv ENV VARIABLES
+# (setenv "VIRTUALENVWRAPPER_PYTHON" (expand-file-name "/usr/local/bin/python"))
+# (setenv "VIRTUALENVWRAPPER_VIRTUALENV" (expand-file-name "/usr/local/bin/virtualenv"))
+# (setenv "WORKON_HOME" (expand-file-name "~/Projects/virtualenvs"))
+# (setenv "PROJECT_HOME" (expand-file-name "~/Projects"))
+# #+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+;; utf-8 all the things
+(setenv "LC_CTYPE" "en_US.UTF-8")
+(setenv "LC_ALL" "en_US.UTF-8")
+(setenv "LANG" "en_US.UTF-8")
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(prefer-coding-system 'utf-8)
+
+#+END_SRC
+
+In case it isn't obvious, we want our EDITOR to default to emacs
+#+BEGIN_SRC emacs-lisp
+(setenv "EDITOR" "emacsclient")
+
+#+END_SRC
+
+** FIXME bash_completion				    :reference:setup:
+Finally, for git completion, we have
+#+BEGIN_EXAMPLE
+#+BEGIN_SRC 
+brew install bash-completion
+
+#+END_SRC
+#+END_EXAMPLE
+With an anticipated result of:
+
+#+BEGIN_QUOTE
+==> Downloading https://homebrew.bintray.com/bottles/bash-completion-1.3_2.sierra.bottle.tar.gz
+######################################################################## 100.0%
+==> Pouring bash-completion-1.3_2.sierra.bottle.tar.gz
+==> Caveats
+Add the following lines to your ~/.bash_profile:
+  [ -f /usr/local/etc/bash_completion ] && . /usr/local/etc/bash_completion
+
+Bash completion has been installed to:
+  /usr/local/etc/bash_completion.d
+==> Summary
+🍺  /usr/local/Cellar/bash-completion/1.3_2: 189 files, 608.0KB
+[
+
+#+END_QUOTE
+
+** FIXME =elpy= 						:debug:alias:
+#    CLOCK: [2017-04-07 Fri 09:55]--[2017-04-07 Fri 10:00] =>  0:05
+# ipython and readline get weird in v 5 and above.
+
+# marvin has since downgraded to v 4.(?)2.1
+
+# still, getting a backtrace on this when loading via
+
+# as of CLOCK, I have attempted to completely uninstall ipython for purposes of
+# testing data integrations.
+
+# I may (but likely) re-install at a later date.  But not without explicit
+# instructions.  Too many shell dumps in =~/Downloads/= to do otherwise.
+
+# #+name: open-emacs-osx
+# # #+BEGIN_EXAMPLE
+# # #+BEGIN_SRC sh
+# # open -a Emacs --args --debug-init
+# # #+END_SRC
+# # #+END_EXAMPLE
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'package-archives
+             '("elpy" . "https://jorgenschaefer.github.io/packages/"))
+(require 'elpy)
+(elpy-enable)
+;; See the custom file in your dot emacs directory for python shell interpreter settings
+;; (elpy-use-ipython)
+;; (setq python-shell-interpreter "ipython")
+;; (setq python-shell-interpreter-args "--simple-prompt -i")
+
+;; convienence alias for workon
+(defalias 'workon 'pyenv-workon)
+
+#+END_SRC
+
+- [ ] run 'M-x elpy-config' and workon an env to make sure this is working
+
+** FIXME install org-bullets				    :reference:setup:
+pretty sure this is brewable.  Separated from core of org-mode as of version 9.
+** =org-mode=
+*** General settings
+
+Define how org does bullets
+
+#+BEGIN_SRC emacs-lisp
+(require 'org-bullets)
+(add-hook 'org-mode-hook (lambda () (org-bullets-mode t)))
+#+END_SRC
+
+I like seeing a little downward-pointing arrow instead of the usual ellipsis
+(=...=) that org displays when there's stuff under a header.
+
+#+BEGIN_SRC emacs-lisp
+(setq org-ellipsis "⤵")
+#+END_SRC
+
+Here's an alternative set of org-bullets I may use later.
+
+  # #+BEGIN_SRC emacs-lisp
+  # (use-package org-bullets
+  # :init
+  # (setq org-bullets-bullet-list
+  # '("◉" "◎" "⚫" "○" "►" "◇"))
+  # :config
+  # (setcdr org-bullets-bullet-map nil)
+  # (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+  # )
+  # #+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(setq org-export-in-background nil)
+(setq org-use-speed-commands t)
+(setq org-refile-targets '((org-agenda-files . (:maxlevel . 6))))
+(setq org-hide-leading-stars t)
+(add-hook 'org-mode-hook 'org-indent-mode)
+
+;; Open .org and .txt files in org-mode
+(add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
+(add-to-list 'auto-mode-alist '("\\.txt\\'" . org-mode))
+
+(add-hook 'org-agenda-finalize-hook
+      (lambda () (remove-text-properties
+         (point-min) (point-max) '(mouse-face t))))
+#+END_SRC
+
+*** Keybindings
+I was to use a different agenda and capture scheme.  See file:~/Documents/_scratch.org
+
+Don't panic.  Read the link.
+#+BEGIN_SRC emacs-lisp
+(define-key global-map "\C-cl" 'org-store-link)
+(define-key global-map "\C-cc" 'org-capture)
+(define-key global-map "\C-ca" 'org-agenda)
+
+(eval-after-load "org-agenda" '(progn
+  (define-key org-agenda-mode-map "d" 'org-agenda-deadline)
+  (define-key org-agenda-mode-map "s" 'org-agenda-schedule) ))
+
+;; Open this config file - repeat of first section... FIXME
+(global-set-key (kbd "C-c s")
+        (lambda () (interactive) (find-file "~/.emacs.d/s2-emacs-settings.org")))
+
+;; bindings for capture templates
+(define-key global-map "\C-ci" ;inbox
+  (lambda () (interactive) (org-capture nil "i")))
+(define-key global-map "\C-cnn" ;new note
+  (lambda () (interactive) (org-capture nil "n")))
+
+;; allow comment region in the code edit buffer (according to language)
+(defun my-org-comment-dwim (&optional arg)
+  (interactive "P")
+  (or (org-babel-do-key-sequence-in-edit-buffer (kbd "M-;"))
+      (comment-dwim arg)))
+
+(define-key org-mode-map
+  (kbd "M-;") 'my-org-comment-dwim)
+#+END_SRC
+
+*** TODOs
+#+BEGIN_SRC emacs-lisp
+(setq org-enforce-todo-dependencies t)
+
+;; Set to 'invisible and blocked tasks wont show up in agenda, t and they will be dimmed
+(setq org-agenda-dim-blocked-tasks t)
+
+;; Don't keep track of completed repeating tasks
+(setq org-log-repeat nil)
+#+END_SRC
+
+*** Agenda
+#+BEGIN_SRC emacs-lisp
+;; Enable highlight line only for org-agenda-mode (it is annoying in other modes)
+(add-hook 'org-agenda-mode-hook 'hl-line-mode)
+
+;; Make agenda full screen without typing 'o'
+(add-hook 'org-agenda-finalize-hook (lambda () (delete-other-windows)))
+
+(defun s2/skip-unless-work ()
+  "Skip trees that are not waiting"
+  (let ((subtree-end (save-excursion (org-end-of-subtree t))))
+    (if (re-search-forward ":work:" subtree-end t)
+    nil ; tag found, do not skip
+      subtree-end))) ; tag not found, continue after end of subtree
+
+;; Block agenda view for agenda and unscheduled tasks
+(setq org-agenda-custom-commands
+      '(("f" occur-tree "\\<FIXME\\>")
+        ("j" "Agenda and unscheduled tasks"
+         ((tags-todo
+           "-DEADLINE={.+}-SCHEDULED={.+}-notes-someday-emacs-work-projects")
+          (agenda "")
+          )
+         ((org-agenda-start-on-weekday nil)
+          (org-agenda-ndays 2)
+          (org-agenda-prefix-format "○  %t")
+          (org-show-context-detail 'minimal)
+          (org-agenda-remove-tags t)
+          (org-agenda-todo-keyword-format "")
+          (org-deadline-warning-days 0)))
+        ("w" "Work tasks"
+         ((tags-todo
+           "-DEADLINE={.+}-SCHEDULED={.+}-jess-mom-kwh-someday-emacs-projects")
+          (agenda "" nil))
+         ((org-agenda-skip-function '(org-agenda-skip-entry-if 'regexp ":home:"))
+          (org-agenda-start-on-weekday nil)
+          (org-agenda-ndays 1)
+          (org-deadline-warning-days 0)))
+        ;; ("f" "Talking points"
+        ;;      ((tags-todo "+kwh")
+        ;;       (tags-todo "+mom")
+        ;;       (tags-todo "+jess"))
+        ;;  ((org-agenda-prefix-format "- ")
+        ;;   (org-show-context-detail 'minimal)
+        ;;   (org-agenda-todo-keyword-format "")))
+        ("n" "notes"
+         ((tags-todo "+notes"))
+         ((org-agenda-prefix-format "- ")
+          (org-show-context-detail 'minimal)
+          (org-agenda-todo-keyword-format "")))
+        (";" "Someday"
+         ((tags-todo "+someday"))
+         ((org-agenda-prefix-format "- ")
+          (org-show-context-detail 'minimal)
+          (org-agenda-remove-tags t)
+          (org-agenda-todo-keyword-format "")))
+        ("p" "Projects"
+         ((tags-todo "+projects"))
+         ((org-agenda-prefix-format "- ")
+          (org-show-context-detail 'minimal)
+          (org-agenda-remove-tags t)
+          (org-agenda-todo-keyword-format "")))
+        ("l" "Emacs"
+         ((tags-todo "+emacs"))
+         ((org-agenda-prefix-format "- ")
+          (org-show-context-detail 'minimal)
+          (org-agenda-remove-tags t)
+          (org-agenda-todo-keyword-format "")))
+        ("2" "Mobile tasks"
+         ((tags "-DEADLINE={.+}-SCHEDULED={.+}/+TODO")
+          (agenda ""))
+         ((org-agenda-prefix-format "- ")
+          (org-agenda-todo-keyword-format "")
+          (org-agenda-start-on-weekday nil)
+          (org-agenda-ndays 3)
+          (org-deadline-warning-days 0))
+         ("~/FilesToSync/org_files/taskpaper_files/da_guai.taskpaper"))))
+
+(setq org-agenda-files '("~/FilesToSync/org_files/da_guai.org"))
+
+;; Only ask for confirmation of kills within agenda
+;; only if TODO spans more than 2 lines
+(setq org-agenda-confirm-kill 2)
+
+(setq org-deadline-warning-days 3)
+#+END_SRC
+
+*** Capture templates
+#+BEGIN_SRC emacs-lisp
+(setq org-capture-templates
+  '(("i" "New TODO to Inbox" entry (file+headline
+    "~/FilesToSync/org_files/da_guai.org" "Inbox")
+    "* TODO %?" :kill-buffer t)
+
+  ("n" "New note to xnotes.org" entry (file
+   "~/FilesToSync/org_files/xnotes.org")
+   "* %T\n\n%i%?" :prepend t :empty-lines 1)
+
+  ("w" "New work note" entry (file
+    "~/FilesToSync/org_files/worknotes.org")
+    "* %T\n\n%i%?" :kill-buffer t :prepend t :empty-lines 1)
+
+  ("d" "New daydayup entry" entry (file
+    "~/FilesToSync/org_files/daydayup.org")
+    "* %T\n\n%?" :kill-buffer t :prepend t :empty-lines 1)
+
+  ("m" "New family business TODO" entry (file+headline
+   "~/FilesToSync/org_files/roanoke.org" "Roanoke Inbox")
+   "* TODO from %T %?" :kill-buffer t)
+
+  ("l" "New Lochbrae TODO" entry (file+headline
+   "~/FilesToSync/org_files/lochbrae.org" "Lochbrae Inbox")
+   "* TODO from %T %?" :kill-buffer t)))
+#+END_SRC
+
+*** make things look nice
+Use syntax highlighting in source blocks while editing.
+
+#+BEGIN_SRC emacs-lisp
+(setq org-src-fontify-natively t)
+#+END_SRC
+
+Make TAB act as if it were issued in a buffer of the language's major mode.
+
+#+BEGIN_SRC emacs-lisp
+(setq org-src-tab-acts-natively t)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(setq org-src-window-setup 'current-window
+      org-src-strip-leading-and-trailing-blank-lines t
+      org-src-preserve-indentation t)
+#+END_SRC
+
+*** FIXME Babel						    :reference:setup:
+Add or create an ob-ascii.el for use with pyorgnode
+ - [ ] added setps to setup documentation
+
+#+BEGIN_SRC emacs-lisp
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((python . t)
+   (emacs-lisp . t)
+   (org . t)
+   (awk . t)
+   (ledger . t)
+   (sh . t)
+   (dot . t)))
+#+END_SRC
+
+** FIXME projects and publishing		      :reference:setup:elisp:
+# *** REVIEW Projects for Publishing
+# This seems to be giving us trouble.   Possible most of this is already loaded as Org comes with emacs now (we're on emacs 25)
+# # #+BEGIN_SRC emacs-lisp
+# # ;; minimal org-set up
+# # ;; activate debugging
+# # (setq debug-on-error t
+# #       debug-on-signal nil
+# #       debug-on-quit nil)
+
+# # ;; add latest org-mode to load path
+# # (add-to-list 'load-path (expand-file-name "/Users/sswitzer/Library/opcode/org-mode/lisp"))
+# # (add-to-list 'load-path (expand-file-name "/Users/sswitzer/Library/opcode/org-mode/contrib/lisp" t))
+# # #+END_SRC
+
+# # org-annotate-file
+# # #+BEGIN_SRC emacs-lisp
+# # (require 'org-annotate-file)
+# # (global-set-key (kbd "C-c C-l") 'org-annotate-file)
+# # (setq org-annotate-file-storage-file "~/Downloads/annotated.org")
+# # #+END_SRC
+# # org-panel
+# # #+BEGIN_SRC emacs-lisp
+# # (require 'org-panel)
+# # (eval-after-load 'org-mode
+# #   (define-key org-mode-map [(control ?c) ?p] 'orgpan-panel))
+# # #+END_SRC
+# # #+BEGIN_SRC emacs-lisp
+# # ;; modules to require/include
+
+# # (require 'ox-confluence) 
+
+# # #+END_SRC
+# # see [[file:~/Library/opcode/org-mode/contrib/orgmanual.org::*Publishing][Publishing]]
+
+# kWh InfoSec wiki
+# #+BEGIN_SRC emacs-lisp
+# (setq org-publish-project-alist
+#       '(("tps"
+#          :base-directory "~/FilesToSync/data/kwh/thirdpartyservices/"
+#          :base-extension "any"
+#          :publishing-directory "~/FilesToSync/data/org-exports/isms/"
+#          :publishing-function org-confluence-export-as-confluence
+#          :exclude "noexport"
+#          :recursive nil ;; :filepath "~/FilesToSync/data/kwh/thirdpartyservices/tps.org"
+#          )
+
+#         ("kwhtopology"
+#          :base-directory "~/FilesToSync/data/kwh/securitypoliciesanddocs/"
+#          :publishing-directory "~/FilesToSync/data/org-exports/isms/"
+#          :publishing-function org-confluence-export-as-confluence
+#          :base-extension "any"
+#          :recursive nil ;; :filepath "~/FilesToSync/data/kwh/securitypoliciesanddocs/kwhtopology.org"
+#          )
+
+#         ("usbconcerns"
+#          :base-directory "~/FilesToSync/data/kwh/securitypoliciesanddocs/"
+#          :publishing-directory "~/FilesToSync/data/org-exports/isms/"
+#          :publishing-function org-confluence-export-as-confluence
+#          :base-extension "any"
+#          :recursive nil ;; :filepath "~/FilesToSync/data/kwh/securitypoliciesanddocs/usbpolicyconcerns.org"
+#          )
+
+#         ("infosecpolicy"
+#          :components ("kwhtopology" "usbconcerns"))
+#         ("isms" :components ("tps" "infosecpolicy"))))
+# #+END_SRC
+# *** lisp locations found debugging org-export
+# Be sure to checkout out the orgmanual[fn:orgmanual: [[file:~/Library/opcode/org-mode/contrib/orgmanual.org::*Org-mode%20setup][Org-mode setup]]]
+# Ran the Org-mode set up blocks for Editing Setup and init.el file.
+# but that is it (and didn't add them to [this] settings file.)
+
+
+# #+BEGIN_EXAMPLE
+# /Applications/Emacs.app/Contents/Resources/lisp/org/
+
+# #+END_EXAMPLE
+# The above directory contains =ox.el=
+# The counterpart for Aquamacs hasn't been encountered, but likely.
+
+# More of them can be found in the =contrib/= directory (see Installation) or through the Emacs packaging system
+
+# This contrib directory can be found... In the downloaded Org source files!!
+# [[file:~/Library/opcode/org-mode/contrib/README::ox-confluence.el%20---%20Confluence%20Wiki%20exporter][file:~/Library/opcode/org-mode/contrib/README::ox-confluence.el --- Confluence Wiki exporter]]
+
+# # *** custom Org Export packages
+# # #+BEGIN_SRC emacs-lisp
+# # (add-to-list 'load-path (expand-file-name "~/Projects/lisp/src/"))  ;; was just ox-jira.el
+# # (require 'ox-jira)
+# # #+END_SRC
